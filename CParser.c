@@ -50,7 +50,6 @@ char peek (Stack *stack){
 
 
 
-
 int main(void){
     
     //initialize the stack here
@@ -75,59 +74,60 @@ int main(void){
         return 0;
     }
 
-    //c is the current character in the file being read
-    char c;
-    //feof is the end charactrer of the file
-    while ((c = fgetc(file)) != EOF)
-    {
-        //if c is a end of line, add 1 to line count
-        if (c == '\n'){
-            line++;
-        }
-            
+    char lineBuffer[1024];  //buffer for each line
+    while (fgets(lineBuffer, sizeof(lineBuffer), file)) {
         
-        
-
-        //if c is a opening bracket, add to the stack
-        if(( c == '(') || (c == '{') || ( c == '[')){
-            push(&s, c);
+        //check file for single-line comments
+        char *commentStart = strstr(lineBuffer, "//");
+        if (commentStart) {
+            *commentStart = '\0';  //remove everything after the start of the comment
         }
 
-        //else if c is a closing bracket character, check to see if it matches
-        //the stack character, if not print error message
+        //process each character in the trimmed line
+        for (int i = 0; lineBuffer[i] != '\0'; i++) {
+            char c = lineBuffer[i];
 
-        switch(c){
-            case ')':
-                if (peek(&s) != '('){
-                    printf(" error: missing a closing ) on line %d\n", line);
-                    break;
-                }
-                pop(&s);
-                break;
-            case '}':
-                if (peek(&s) != '{'){
-                    printf("error: missing a closing } on line %d\n", line);
-                    break;
-                }
-                pop(&s);
-                break;
-            case ']':
-                if (peek(&s) != '['){
-                    printf("error: missing a closing ] on line %d \n", line);
-                    break;
-                }
-                pop(&s);
-                break;
+            //if c is a end of line, add 1 to line count
+            if (c == '\n'){
+                line++;
+            }
 
+            //if c is a opening bracket, add to the stack
+            if(( c == '(') || (c == '{') || ( c == '[')){
+                push(&s, c);
+            }
+
+            //else if c is a closing bracket character, check to see if it matches
+            //the stack character, if not print error message
+
+            switch(c){
+                case ')':
+                    if (peek(&s) != '('){
+                        printf(" error: missing a closing ) on line %d\n", line);
+                        break;
+                    }
+                    pop(&s);
+                    break;
+                case '}':
+                    if (peek(&s) != '{'){
+                        printf("error: missing a closing } on line %d\n", line);
+                        break;
+                    }
+                    pop(&s);
+                    break;
+                case ']':
+                    if (peek(&s) != '['){
+                        printf("error: missing a closing ] on line %d \n", line);
+                        break;
+                    }
+                    pop(&s);
+                    break;
+            }
         }
-       
-    
+        line++;  // increment line count after processing each line
+    }
 
-    
-
-    } 
     printf("lines: %d", line);
     fclose(file);
     return 0;
-
 }
