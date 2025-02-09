@@ -48,6 +48,27 @@ char peek (Stack *stack){
     return (stack -> list[stack->top]);
 }
 
+//dual purpose method, flips the character for error printing accuracy, 
+//as well as printing e if the character isnt an open bracket in order to 
+//check for extra characters
+char flipBracket(char bracket){
+    char newBracket;
+    switch(bracket){
+        case('('):
+            newBracket = (')');
+            break;
+        case('{'):
+            newBracket = ('}');
+            break;
+        case('['):
+            newBracket = (']');
+            break;
+            //error state
+        default:
+            newBracket = ('e');
+    }
+    return newBracket;
+}
 
 
 
@@ -74,60 +95,89 @@ int main(void){
         printf("error: file not found");
         return 0;
     }
-
-    //c is the current character in the file being read
-    char c;
-    //feof is the end charactrer of the file
-    while ((c = fgetc(file)) != EOF)
-    {
-        //if c is a end of line, add 1 to line count
-        if (c == '\n'){
-            line++;
-        }
-            
+    bool errorSet = false;
+    char lineBuffer[1024];  //buffer for each line
+    while (fgets(lineBuffer, sizeof(lineBuffer), file)) {
         
-        
-
-        //if c is a opening bracket, add to the stack
-        if(( c == '(') || (c == '{') || ( c == '[')){
-            push(&s, c);
+        //check file for single-line comments
+        char *commentStart = strstr(lineBuffer, "//");
+        if (commentStart) {
+            *commentStart = '\0';  //remove everything after the start of the comment
         }
 
-        //else if c is a closing bracket character, check to see if it matches
-        //the stack character, if not print error message
+        //process each character in the trimmed line
+        for (int i = 0; lineBuffer[i] != '\0'; i++) {
+            if (!errorSet){
+                char c = lineBuffer[i];
 
-        switch(c){
-            case ')':
-                if (peek(&s) != '('){
-                    printf(" error: missing a closing ) on line %d\n", line);
-                    break;
-                }
-                pop(&s);
-                break;
-            case '}':
-                if (peek(&s) != '{'){
-                    printf("error: missing a closing } on line %d\n", line);
-                    break;
-                }
-                pop(&s);
-                break;
-            case ']':
-                if (peek(&s) != '['){
-                    printf("error: missing a closing ] on line %d \n", line);
-                    break;
-                }
-                pop(&s);
-                break;
+                //if c is a end of line, add 1 to line count
+                
 
-        }
-       
+                //if c is a opening bracket, add to the stack
+                if(( c == '(') || (c == '{') || ( c == '[')){
+                    push(&s, c);
+                }
+
+                //else if c is a closing bracket character, check to see if it matches
+                //the stack character, if not print error message
+
+                switch(c){
+                case ')':
+                
+                    if (peek(&s) != '('){
+                        if (flipBracket(peek(&s)) == 'e') {
+                            printf("error: missing ( or extra ) in line %d\n",line);
+                            break;
+                        }
+                        printf("error: found ), expected %c  in line %d\n",flipBracket(peek(&s)), line);
+                        break;
+                    }
+                    pop(&s);
+                    break;
+                case '}':
+                    
+                    if (peek(&s) != '{'){
+                        if (flipBracket(peek(&s)) == 'e') {
+                            printf("error: missing { or extra } in line %d\n",line);
+                            break;
+                        }
+                        printf("error: found }, expected %c in line %d\n",flipBracket(peek(&s)), line);
+                        errorSet = true;
+                        break;
+                    }
+                    pop(&s);
+                    break;
+                case ']':
+                
+                    if (peek(&s) != '['){
+                        if (flipBracket(peek(&s)) == 'e') {
+                            printf("error: missing [ or extra ] in line %d\n",line);
+                            break;
+                        }
+                        printf("error: found ], expected %c in line %d\n",flipBracket(peek(&s)) , line);
+                        errorSet = true;
+                        break;
+                    }
+                    pop(&s);
+                    break;
+                
+                }
+                
+            }
+          // increment line count after processing each line
+        }line++;
+    }
+    // lastly check if any characters are left in the stack after gone through, 
+    //pop, and print error
+    if(!errorSet){
+       while (s.top >= 0 ){
+        pop(&s);
+        printf("error: mssing ),}, or ] at EOF");
+
+        } 
+    }
+
     
-
-    
-
-    } 
-    printf("lines: %d", line);
     fclose(file);
     return 0;
-
 }
